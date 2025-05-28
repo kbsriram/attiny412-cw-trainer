@@ -13,6 +13,9 @@ void tone_init(void) {
 }
 
 void tone_enable(bool enable) {
+  if (enable == tone_enabled) {
+    return;
+  }
   tone_enabled = enable;
   if (!enable) {
     PORTA.OUTCLR = PIN6_bm;

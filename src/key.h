@@ -8,4 +8,4 @@ typedef enum _key_state_t {
 } key_state_t;
 
 void key_init(void);
-key_state_t key_update(void);
+key_state_t key_tick(void);

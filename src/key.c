@@ -21,7 +21,7 @@ void key_init(void) {
   hal_key_init();
 }
 
-key_state_t key_update(void) {
+key_state_t key_tick(void) {
   // Update pressed_ticks if key is currently pressed.
   if (debounced_pressed && (pressed_ticks < LONG_PRESS_TICKS)) {
     pressed_ticks++;
