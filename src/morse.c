@@ -66,7 +66,7 @@ static const uint8_t ENCODING[] = {
 uint8_t morse_buf[5] = {0, 0, 0, 0, 0};
 
 // How many morse letters are in the buffer.
-static uint8_t morse_buf_len = 0;
+uint8_t morse_buf_len = 0;
 
 // How many morse letters have been sent.
 static uint8_t morse_buf_sent = 0;
@@ -100,11 +100,11 @@ void morse_reset(void) {
   extra_dit_spacing = 0;
 }
 
-static bool morse_is_dah(uint8_t encoded, uint8_t pos) {
+bool morse_is_dah(uint8_t encoded, uint8_t pos) {
   return (encoded & (1 << pos));
 }
 
-static uint8_t morse_num_elements(uint8_t encoded) {
+uint8_t morse_num_elements(uint8_t encoded) {
   uint8_t pos = 7;
   // find the first set bit
   while (!(encoded & (1 << pos))) {
@@ -117,8 +117,10 @@ static void advance_element(void) {
   // Set up the dit/dah duration and send the next element in our
   // letter.
   if (morse_is_dah(morse_letter, morse_letter_len - 1 - morse_letter_sent)) {
+    printf("morse->start dah\n");
     tick_countdown = 3 * DIT_TICKS;
   } else {
+    printf("morse->start dit\n");
     tick_countdown = DIT_TICKS;
   }
   morse_letter_sent++;
@@ -130,9 +132,11 @@ static morse_action_t advance(void) {
     // Check if we have more characters to send.
     if (morse_buf_sent >= morse_buf_len) {
       // All done.
+      printf("morse->done\n");
       return MORSE_NONE;
     }
     // Advance our buffer, and set up the current character to send.
+    printf("morse->next letter\n");
     morse_letter = morse_buf[morse_buf_sent++];
     morse_letter_len = morse_num_elements(morse_letter);
     morse_letter_sent = 0;
@@ -143,6 +147,23 @@ static morse_action_t advance(void) {
   advance_element();
   in_mark = true;
   return MORSE_START_MARK;
+}
+
+void morse_flush(void) {
+  morse_buf_sent = morse_buf_len;
+  morse_letter_sent = morse_letter_len;
+  tick_countdown = 0;
+  in_mark = false;
+}
+
+void morse_set(uint8_t char_idx) {
+  morse_reset();
+  if (char_idx >= sizeof(ENCODING)) {
+    char_idx = 0;
+  }
+  morse_buf[0] = ENCODING[char_idx];
+  morse_buf_len = 1;
+  tick_countdown = 5 * DIT_TICKS;
 }
 
 void morse_random_generate(uint8_t nchars, uint8_t extra) {
@@ -179,6 +200,7 @@ morse_action_t morse_tick(void) {
   // Handle a common case - when we get out of a mark
   // mode, we always pause for a dit duration.
   if (in_mark) {
+    printf("mark->space\n");
     tick_countdown = DIT_TICKS;
     in_mark = false;
     return MORSE_START_SPACE;

@@ -24,6 +24,17 @@ typedef enum _morse_action_t {
 
 void morse_reset(void);
 
+void morse_set(uint8_t char_idx);
+
+void morse_flush(void);
+
 void morse_random_generate(uint8_t nchars, uint8_t farnsworth_dit_spacing);
 
 morse_action_t morse_tick(void);
+
+bool morse_is_dah(uint8_t encoded, uint8_t pos);
+
+uint8_t morse_num_elements(uint8_t encoded);
+
+extern uint8_t morse_buf[];
+extern uint8_t morse_buf_len;

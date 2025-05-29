@@ -23,17 +23,19 @@ BOOTEND_FUSE	= 8:0x00
 
 CFLAGS		= -g -Wall -O2 -mmcu=$(MCU_TARGET)
 
-SRCS = main.c ticks.c tone.c hal_key.c key.c morse.c
+SRCS = main.c ticks.c tone.c hal_key.c key.c morse.c capture.c state.c
 OBJS = $(SRCS:.c=.o)
 
 all: main.elf
 
+capture.o: capture.c capture.h morse.h
 hal_key.o: hal_key.c hal_key.h
 key.o: key.c hal_key.h key.h
-main.o: main.c ticks.h tone.h key.h
+main.o: main.c key.h state.h ticks.h tone.h
+morse.o: morse.c morse.h
+state.o: state.c capture.h key.h morse.h state.h tone.h
 ticks.o: ticks.c ticks.h
 tone.o: tone.c tone.h
-morse.o: morse.c morse.h
 
 main.elf: $(OBJS)
 	$(CC) $(CFLAGS) $(LDFLAGS)  $(LIBS) -o $@ $^

@@ -1,9 +1,10 @@
 #include <avr/interrupt.h>
 #include <avr/sleep.h>
 
+#include "key.h"
+#include "state.h"
 #include "ticks.h"
 #include "tone.h"
-#include "key.h"
 
 // (1) Vdd
 // (2) PA6 - SPKR
@@ -23,10 +24,12 @@ void setup(void) {
 int main(void) {
   setup();
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  state_reset();
   sei();
 
   while (1) {
     sleep_mode();
     // Woken up by the PIT
+    state_tick();
   }
 }
