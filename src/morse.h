@@ -1,16 +1,23 @@
 #pragma once
 
-// This is a library for a state machine that generates random morse
-// characters. It further "plays" these characters by keeping track of
-// the internal state of mark and space durations needed to generate
-// these characters.
+// This is a library for a machine that generates random morse
+// characters. It "plays" these characters by keeping track of the
+// internal state of mark and space durations needed to generate these
+// characters.
 //
 // The caller first sets a new random sequence via
 // morse_random_generate() Each subsequent call to morse_tick()
 // returns one of START_MARK, START_SPACE, HOLD or NONE to represent
 // an action to be taken at that tick. HOLD is used to indicate the
-// last action is to be maintained, and NONE means there are no pending
-// morse characters waiting to be sent.
+// last action is to be maintained, and NONE means there are no
+// pending morse characters waiting to be sent.
+//
+// The machine can be restarted with morse_rewind() or flushed (meaning
+// it's as though the machine finished sending all the characters, but
+// other state is retained.)
+//
+// morse_reset() resets the machine entirely, so it returns to an
+// empty state.
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -27,6 +34,8 @@ void morse_reset(void);
 void morse_set(uint8_t char_idx);
 
 void morse_flush(void);
+
+void morse_rewind(void);
 
 void morse_random_generate(uint8_t nchars, uint8_t farnsworth_dit_spacing);
 

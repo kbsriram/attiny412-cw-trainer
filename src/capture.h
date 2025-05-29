@@ -9,6 +9,8 @@
 #include <stdbool.h>
 
 void capture_reset(void);
-void capture_tick(void);
-void capture_push(void);
+void capture_increment(void);
+void capture_push_mark(void);
+void capture_push_space(void);
 bool capture_match(void);
+bool capture_timeout(void);

@@ -25,7 +25,6 @@ static practice_state_t practice_state = PRACTICE_ANNOUNCING;
 static straight_key_state_t straight_key_state = STRAIGHT_KEY_ANNOUNCING;
 static uint8_t practice_nchars = 2;
 static uint8_t practice_farnsworth_dits = 3;
-static uint16_t practice_waiting_ticks = 0;
 
 static void mode_reset(mode_t new_mode) {
   tone_enable(false);
@@ -62,9 +61,14 @@ static void straight_key_handle_ready(key_state_t key_state) {
   }
 }
 
-static void practice_start_new(void) {
+static void practice_start(bool is_new) {
   tone_enable(false);
-  morse_random_generate(practice_nchars, practice_farnsworth_dits);
+  capture_reset();
+  if (is_new) {
+    morse_random_generate(practice_nchars, practice_farnsworth_dits);
+  } else {
+    morse_rewind();
+  }
   practice_state = PRACTICE_SENDING;
 }
 
@@ -115,8 +119,38 @@ static void straight_key_handle(key_state_t key_state, morse_action_t morse_acti
   }
 }
 
-static void practice_handle_waiting(key_state_t key_state) {
+static void practice_grade(void) {
+  if (capture_match()) {
+    // Yay! user passed the test.
+    practice_start(/* is_new */ true);
+  } else {
+    practice_start(/* is_new */ false);
+  }
+}
 
+static void practice_handle_waiting(key_state_t key_state) {
+  switch (key_state) {
+    case KEY_NO_CHANGE:
+      capture_increment();
+      if (capture_timeout()) {
+        practice_grade();
+      }
+      break;
+
+    case KEY_UP:
+      capture_push_mark();
+      break;
+
+    case KEY_DOWN:
+      capture_push_space();
+      break;
+
+    case KEY_UP_LONG:
+      // This should not happen, as we handle this in the main tick
+      // handler. But do the right thing anyway.
+      mode_reset(STRAIGHT_KEY);
+      break;
+  }
 }
 
 static void practice_handle_sending(key_state_t key_state, morse_action_t morse_action) {
@@ -127,7 +161,6 @@ static void practice_handle_sending(key_state_t key_state, morse_action_t morse_
     morse_flush();
     capture_reset();
     practice_state = PRACTICE_WAITING;
-    practice_waiting_ticks = 0;
     practice_handle_waiting(key_state);
     return;
   }
@@ -136,7 +169,6 @@ static void practice_handle_sending(key_state_t key_state, morse_action_t morse_
     // Morse has finished sending, switch to waiting mode.
     capture_reset();
     practice_state = PRACTICE_WAITING;
-    practice_waiting_ticks = 0;
   }
 }
 
@@ -148,12 +180,12 @@ static void practice_handle(key_state_t key_state, morse_action_t morse_action) 
         // User did something during announcing. Skip to
         // starting a new practice.
         morse_reset();
-        practice_start_new();
+        practice_start(/* is_new */ true);
         return;
       }
       if (morse_send_finished(morse_action)) {
         // Announce is finished, start a new practice block.
-        practice_start_new();
+        practice_start(/* is_new */ true);
       }
       return;
 

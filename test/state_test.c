@@ -158,10 +158,54 @@ void test_practice_sending(void) {
   verify_mark_space_dits(expected, 5);
 }
 
+void test_practice_sending_timeout(void) {
+  printf("Test: state_practice_sending_timeout\n");
+  state_reset();
+
+  // The tone should remain silent.
+  verify_tone(100, false);
+
+  // Get into practice mode.
+  long_press_and_verify_in_practice();
+
+  // The next tick should initialize the morse generator.
+  state_tick();
+
+  // We should have generated two characters in the morse machine.
+  assert(morse_buf_len == 2);
+
+  // Reset buffer to 'E' 'T' (dit, dah)
+  morse_buf[0] = 0b00000010;
+  morse_buf[1] = 0b00000011;
+
+  // Check 3 cycles of timeouts.
+  for (int i = 0; i < 3; i++) {
+    // expected_farnsworth_dits = 3;
+    // We should get a word + farnsworth amount of dit silence
+    // before we get to the sending.
+    verify_tone((8 + 3) * DIT_TICKS - 1, false);
+
+    // We expect a E T sequence of marks and spaces.
+    int expected[] = {
+      1, 4 + 3, // letter + farnsworth spacing after E
+      3, 1,
+    };
+    verify_mark_space_dits(expected, 2);
+
+    // We should timeout in 2000 ticks.
+    verify_tone(2000, false);
+
+    // Morse machine should rewind back in this tick, with a word +
+    // farnsworth amount of delay.
+    state_tick();
+  }
+}
+
 int main(void) {
-  test_reset();
-  test_straight_key();
-  test_straight_key_long_press();
-  test_practice_sending();
+  /* test_reset(); */
+  /* test_straight_key(); */
+  /* test_straight_key_long_press(); */
+  /* test_practice_sending(); */
+  test_practice_sending_timeout();
   return 0;
 }

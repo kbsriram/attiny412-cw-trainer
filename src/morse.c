@@ -100,6 +100,21 @@ void morse_reset(void) {
   extra_dit_spacing = 0;
 }
 
+void morse_rewind(void) {
+  morse_buf_sent = 0;
+  morse_letter = 0;
+  morse_letter_len = 0;
+  morse_letter_sent = 0;
+  in_mark = false;
+
+  // Set up an initial 5 dit wait when rewinding. When advance()
+  // starts working on the buffer, another 3 dit wait is added,
+  // forming a word-level wait at this point.
+  tick_countdown = 5 * DIT_TICKS;
+}
+
+
+
 bool morse_is_dah(uint8_t encoded, uint8_t pos) {
   return (encoded & (1 << pos));
 }
