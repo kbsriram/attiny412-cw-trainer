@@ -27,7 +27,7 @@ morse.o: ../src/morse.c ../src/morse.h
 capture.o: ../src/capture.c ../src/capture.h ../src/morse.h
 	$(CC) $(CFLAGS) -c ../src/capture.c -o $@
 
-state.o: ../src/state.c ../src/capture.h ../src/key.h ../src/morse.h ../src/state.h ../src/tone.h
+state.o: ../src/state.c ../src/morse.h ../src/state.h
 	$(CC) $(CFLAGS) -c ../src/state.c -o $@
 
 fake_hal_key.o: fake_hal_key.c ../src/hal_key.h

@@ -117,10 +117,8 @@ static void advance_element(void) {
   // Set up the dit/dah duration and send the next element in our
   // letter.
   if (morse_is_dah(morse_letter, morse_letter_len - 1 - morse_letter_sent)) {
-    printf("morse->start dah\n");
     tick_countdown = 3 * DIT_TICKS;
   } else {
-    printf("morse->start dit\n");
     tick_countdown = DIT_TICKS;
   }
   morse_letter_sent++;
@@ -132,11 +130,9 @@ static morse_action_t advance(void) {
     // Check if we have more characters to send.
     if (morse_buf_sent >= morse_buf_len) {
       // All done.
-      printf("morse->done\n");
       return MORSE_NONE;
     }
     // Advance our buffer, and set up the current character to send.
-    printf("morse->next letter\n");
     morse_letter = morse_buf[morse_buf_sent++];
     morse_letter_len = morse_num_elements(morse_letter);
     morse_letter_sent = 0;
@@ -177,11 +173,10 @@ void morse_random_generate(uint8_t nchars, uint8_t extra) {
   }
   morse_buf_len = nchars;
 
-  // Start off with some extra spacing.
-  // Note that we use 5 dits here, and each letter starts
-  // off with 3 dits of spaces so practice starts with 8 dit
-  // spaces which is a word's worth of spacing.
-  tick_countdown = (5 + extra_dit_spacing) * DIT_TICKS;
+  // Start off with a word space. Note that letters begin with
+  // 3 extra dit ticks, so we add 5 more here to make an 8
+  // dit word space.
+  tick_countdown = 5 * DIT_TICKS;
 }
 
 morse_action_t morse_tick(void) {
@@ -200,7 +195,6 @@ morse_action_t morse_tick(void) {
   // Handle a common case - when we get out of a mark
   // mode, we always pause for a dit duration.
   if (in_mark) {
-    printf("mark->space\n");
     tick_countdown = DIT_TICKS;
     in_mark = false;
     return MORSE_START_SPACE;

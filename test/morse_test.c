@@ -5,14 +5,12 @@
 
 #define DIT_TICKS 60
 
-extern uint8_t morse_buf[];
-
-static void verify_ticks(int count, morse_action_t action) {
+static void verify_ticks(char* msg, int count, morse_action_t action) {
   for (int i = 0; i < count; i++) {
     morse_action_t actual = morse_tick();
     if (actual != action) {
-      printf("At count %d: expected %d, but got %d\n",
-             i, action, actual);
+      printf("%s: At count %d: expected %d, but got %d\n",
+             msg, i, action, actual);
       assert(false);
     }
   }
@@ -21,7 +19,7 @@ static void verify_ticks(int count, morse_action_t action) {
 void test_action_when_reset(void) {
   printf("Test: morse_action_when_reset\n");
   morse_reset();
-  verify_ticks(10, MORSE_NONE);
+  verify_ticks("reset", 10, MORSE_NONE);
 }
 
 void test_random_generate(void) {
@@ -36,7 +34,7 @@ void test_random_generate(void) {
   morse_buf[4] = 0b00001010;
 
   // Start with 8 dit spaces before a test begins.
-  verify_ticks(DIT_TICKS * 8 - 1, MORSE_HOLD);
+  verify_ticks("initial pause", DIT_TICKS * 8 - 1, MORSE_HOLD);
 
   // expected sequence of
   // [mark] [space] [mark] [space]...
@@ -58,18 +56,18 @@ void test_random_generate(void) {
   // Step through two at a time.
   for (int i = 0; i < sizeof(expected)/sizeof(int); i += 2) {
     // we expect a mark starting here
-    verify_ticks(1, MORSE_START_MARK);
+    verify_ticks("mark switch", 1, MORSE_START_MARK);
     // mark duration - 1 ticks in hold
-    verify_ticks(DIT_TICKS * expected[i] - 1, MORSE_HOLD);
+    verify_ticks("mark duration", DIT_TICKS * expected[i] - 1, MORSE_HOLD);
 
     // then a space
-    verify_ticks(1, MORSE_START_SPACE);
+    verify_ticks("space switch", 1, MORSE_START_SPACE);
     // space duration - 1 ticks in hold
-    verify_ticks(DIT_TICKS * expected[i + 1] - 1, MORSE_HOLD);
+    verify_ticks("space duration", DIT_TICKS * expected[i + 1] - 1, MORSE_HOLD);
   }
 
   // We should be done at this point.
-  verify_ticks(10, MORSE_NONE);
+  verify_ticks("completed", 10, MORSE_NONE);
 }
 
 int main(void) {
