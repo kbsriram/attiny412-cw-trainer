@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdbool.h>
 #include <assert.h>
 #include <stdio.h>
@@ -10,25 +11,31 @@
 extern bool tone_enabled;
 extern void set_hal_key_pressed(bool v);
 
-void verify_tone(int ticks, bool value) {
+#define ASSERT(cond, ...) \
+  if (!(cond)) { \
+    printf("Failed: %s: %d\n", __FILE__, __LINE__); \
+    printf(__VA_ARGS__); \
+    assert(cond); \
+  }
+
+static void verify_tone(int ticks, bool value) {
   for (int i = 0; i < ticks; i++) {
     state_tick();
-    if (tone_enabled != value) {
-      printf("verify_tone: count=%d: expected tone is %d, but is %d\n",
-             i, value, tone_enabled);
-      assert(false);
-    }
+    ASSERT(
+        tone_enabled == value,
+        "verify_tone: count=%d: expected tone is %d, but is %d\n",
+        i, value, tone_enabled);
   }
 }
 
-void verify_mark_space_dits(int* expected, int count_pairs) {
+static void verify_mark_space_dits(int* expected, int count_pairs) {
   for (int i = 0; i < count_pairs; i++) {
     verify_tone(expected[i * 2] * DIT_TICKS, true);
     verify_tone(expected[i * 2 + 1] * DIT_TICKS, false);
   }
 }  
 
-void long_press_and_verify_in_practice(void) {
+static void long_press_and_verify_in_practice(void) {
   // Interrupt by pressing our key.
   set_hal_key_pressed(true);
 
@@ -62,7 +69,7 @@ void long_press_and_verify_in_practice(void) {
   verify_mark_space_dits(expected, 4);
 }
 
-void send_key_down_up(int* sequence, int count) {
+static void send_key_down_up(int* sequence, int count) {
   for (int i = 0; i < count; i++) {
     // Alternate key down, key up
     bool desired_key_state = (i % 2) == 0;
@@ -77,7 +84,7 @@ void send_key_down_up(int* sequence, int count) {
   }
 }
 
-void test_reset(void) {
+static void test_reset(void) {
   printf("Test: state_reset\n");
   state_reset();
 
@@ -99,7 +106,7 @@ void test_reset(void) {
   verify_tone(1000, false);
 }
 
-void test_straight_key(void) {
+static void test_straight_key(void) {
   printf("Test: state_straight_key\n");
   state_reset();
 
@@ -127,7 +134,7 @@ void test_straight_key(void) {
   verify_tone(1000, false);
 }
 
-void test_straight_key_long_press(void) {
+static void test_straight_key_long_press(void) {
   printf("Test: state_straight_key_long_press\n");
   state_reset();
 
@@ -137,7 +144,7 @@ void test_straight_key_long_press(void) {
   long_press_and_verify_in_practice();
 }
 
-void test_practice_sending(void) {
+static void test_practice_sending(void) {
   printf("Test: state_practice_sending\n");
   state_reset();
 
@@ -151,7 +158,7 @@ void test_practice_sending(void) {
   state_tick();
 
   // We should have generated two characters in the morse machine.
-  assert(morse_buf_len == 2);
+  ASSERT(morse_buf_len == 2, "Morse buffer: expected 2, actually %d\n", morse_buf_len);
 
   // Reset buffer to 'N' 'R' (dadit, didadit)
   morse_buf[0] = 0b00000110;
@@ -160,12 +167,12 @@ void test_practice_sending(void) {
   // expected_farnsworth_dits = 3;
   // We should get a word + farnsworth amount of dit silence
   // before we get to the sending.
-  verify_tone((8 + 3) * DIT_TICKS - 1, false);
+  verify_tone((8 + MAX_FARNSWORTH_DITS) * DIT_TICKS - 1, false);
 
   // We expect a N R sequence of marks and spaces.
   int expected[] = {
     3, 1,
-    1, 4 + 3, // letter + farnsworth spacing after N
+    1, 4 + MAX_FARNSWORTH_DITS, // letter + farnsworth spacing after N
     1, 1,
     3, 1,
     1, 1,
@@ -173,7 +180,7 @@ void test_practice_sending(void) {
   verify_mark_space_dits(expected, 5);
 }
 
-void test_practice_sending_timeout(void) {
+static void test_practice_sending_timeout(void) {
   printf("Test: state_practice_sending_timeout\n");
   state_reset();
 
@@ -187,7 +194,7 @@ void test_practice_sending_timeout(void) {
   state_tick();
 
   // We should have generated two characters in the morse machine.
-  assert(morse_buf_len == 2);
+  ASSERT(morse_buf_len == 2, "Morse buffer: expected 2, actually %d\n", morse_buf_len);
 
   // Reset buffer to 'E' 'T' (dit, dah)
   morse_buf[0] = 0b00000010;
@@ -195,14 +202,13 @@ void test_practice_sending_timeout(void) {
 
   // Check 3 cycles of timeouts.
   for (int i = 0; i < 3; i++) {
-    // expected_farnsworth_dits = 3;
     // We should get a word + farnsworth amount of dit silence
     // before we get to the sending.
-    verify_tone((8 + 3) * DIT_TICKS - 1, false);
+    verify_tone((8 + MAX_FARNSWORTH_DITS) * DIT_TICKS - 1, false);
 
     // We expect a E T sequence of marks and spaces.
     int expected[] = {
-      1, 4 + 3, // letter + farnsworth spacing after E
+      1, 4 + MAX_FARNSWORTH_DITS, // letter + farnsworth spacing after E
       3, 1,
     };
     verify_mark_space_dits(expected, 2);
@@ -216,7 +222,7 @@ void test_practice_sending_timeout(void) {
   }
 }
 
-void test_practice_sending_correct(void) {
+static void test_practice_sending_correct(void) {
   printf("Test: state_practice_sending_correct\n");
   state_reset();
 
@@ -230,20 +236,19 @@ void test_practice_sending_correct(void) {
   state_tick();
 
   // We should have generated two characters in the morse machine.
-  assert(morse_buf_len == 2);
+  ASSERT(morse_buf_len == 2, "Morse buffer: expected 2, actually %d\n", morse_buf_len);
 
   // Reset buffer to 'E' 'T' (dit, dah)
   morse_buf[0] = 0b00000010;
   morse_buf[1] = 0b00000011;
 
-  // expected_farnsworth_dits = 3;
   // We should get a word + farnsworth amount of dit silence
   // before we get to the sending.
-  verify_tone((8 + 3) * DIT_TICKS - 1, false);
+  verify_tone((8 + MAX_FARNSWORTH_DITS) * DIT_TICKS - 1, false);
 
   // We expect a E T sequence of marks and spaces.
   int expected[] = {
-    1, 4 + 3, // letter + farnsworth spacing after E
+    1, 4 + MAX_FARNSWORTH_DITS, // letter + farnsworth spacing after E
     3, 1,
   };
   verify_mark_space_dits(expected, 2);
@@ -264,10 +269,11 @@ void test_practice_sending_correct(void) {
   state_tick();
 
   // We should see something other than E T in the buffer now.
-  assert((morse_buf[0] != 0b00000010) || (morse_buf[1] != 0b00000011));
+  ASSERT((morse_buf[0] != 0b00000010) || (morse_buf[1] != 0b00000011),
+         "Morse buf actually: %d, %d\n", morse_buf[0], morse_buf[1]);
 }
 
-void test_practice_sending_incorrect(void) {
+static void test_practice_sending_incorrect(void) {
   printf("Test: state_practice_sending_incorrect\n");
   state_reset();
 
@@ -281,20 +287,19 @@ void test_practice_sending_incorrect(void) {
   state_tick();
 
   // We should have generated two characters in the morse machine.
-  assert(morse_buf_len == 2);
+  ASSERT(morse_buf_len == 2, "Morse buffer: expected 2, actually %d\n", morse_buf_len);
 
   // Reset buffer to 'E' 'T' (dit, dah)
   morse_buf[0] = 0b00000010;
   morse_buf[1] = 0b00000011;
 
-  // expected_farnsworth_dits = 3;
   // We should get a word + farnsworth amount of dit silence
   // before we get to the sending.
-  verify_tone((8 + 3) * DIT_TICKS - 1, false);
+  verify_tone((8 + MAX_FARNSWORTH_DITS) * DIT_TICKS - 1, false);
 
   // We expect a E T sequence of marks and spaces.
   int expected[] = {
-    1, 4 + 3, // letter + farnsworth spacing after E
+    1, 4 + MAX_FARNSWORTH_DITS, // letter + farnsworth spacing after E
     3, 1,
   };
   verify_mark_space_dits(expected, 2);
@@ -302,7 +307,7 @@ void test_practice_sending_incorrect(void) {
   // Wait a few ticks
   verify_tone(100, false);
 
-  // Send out a perfect dit <letter> dit
+  // Send out a dit <letter> dit
   int key_sequence[] = {
     1, 4, 1, 0
   };
@@ -315,7 +320,8 @@ void test_practice_sending_incorrect(void) {
   state_tick();
 
   // We should still see E T in the buffer.
-  assert((morse_buf[0] == 0b00000010) || (morse_buf[1] == 0b00000011));
+  ASSERT((morse_buf[0] == 0b00000010) && (morse_buf[1] == 0b00000011),
+         "Morse buf actually: %d, %d\n", morse_buf[0], morse_buf[1]);
 }
 
 

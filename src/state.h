@@ -10,3 +10,5 @@
 
 void state_reset(void);
 void state_tick(void);
+
+#define MAX_FARNSWORTH_DITS 5
