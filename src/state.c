@@ -21,7 +21,7 @@ typedef enum _practice_state_t {
 } practice_state_t;
 
 static mode_t mode = STRAIGHT_KEY;
-static practice_state_t practice_state = PRACTICE_ANNOUNCING;
+practice_state_t practice_state = PRACTICE_ANNOUNCING;
 static straight_key_state_t straight_key_state = STRAIGHT_KEY_ANNOUNCING;
 static uint8_t practice_nchars = 2;
 static uint8_t practice_farnsworth_dits = 3;
@@ -120,6 +120,7 @@ static void straight_key_handle(key_state_t key_state, morse_action_t morse_acti
 }
 
 static void practice_grade(void) {
+  tone_enable(false);
   if (capture_match()) {
     // Yay! user passed the test.
     practice_start(/* is_new */ true);
@@ -129,19 +130,21 @@ static void practice_grade(void) {
 }
 
 static void practice_handle_waiting(key_state_t key_state) {
+  capture_increment();
   switch (key_state) {
     case KEY_NO_CHANGE:
-      capture_increment();
       if (capture_timeout()) {
         practice_grade();
       }
       break;
 
     case KEY_UP:
+      tone_enable(false);
       capture_push_mark();
       break;
 
     case KEY_DOWN:
+      tone_enable(true);
       capture_push_space();
       break;
 

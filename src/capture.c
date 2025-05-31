@@ -4,10 +4,16 @@
 #include "capture.h"
 #include "morse.h"
 
+#define DIT_TICKS 60
+
 #define TIMING_BUF_MAX 50
 
 // Only bother to record times up to this many ticks.
 #define TIMING_TICKS_MAX 2000
+
+// We allow a slop for mark and space timings within
+// characters of this many ticks.
+#define ELEMENT_SLOP_TICKS 50
 
 // Captured mark/space timings in ticks.
 // Negative values are spaces, positive values
@@ -19,6 +25,15 @@ static uint8_t timing_len = 0;
 
 // are we accumulating a mark?
 bool in_mark = false;
+
+static bool is_close(uint16_t actual, uint16_t expected) {
+  // Handle uint comparisons without overflowing.
+  if (actual >= expected) {
+    return (actual - expected) <= ELEMENT_SLOP_TICKS;
+  } else {
+    return (expected - actual) <= ELEMENT_SLOP_TICKS;
+  }
+}
 
 void capture_reset(void) {
   timing_len = 0;
@@ -62,12 +77,63 @@ bool capture_timeout(void) {
 }
 
 bool capture_match(void) {
-  // For now, just check that the lengths of the
-  // timings and the sum of the elements from the morse
-  // buffer match.
-  uint8_t expected_elements = 0;
+  // Current position in the timing[] array.
+  uint8_t timing_idx = 0;
+
+  // Step through morse buffer.
   for (uint8_t i = 0; i < morse_buf_len; i++) {
-    expected_elements += morse_num_elements(morse_buf[i]);
+    uint8_t morse_encoded = morse_buf[i];
+    uint8_t start_bit_pos = morse_num_elements(morse_encoded);
+    for (int8_t pos = start_bit_pos - 1; pos >= 0; pos--) {
+      // Did we run out of timing elements too soon?
+      if (timing_idx >= timing_len) {
+        return false;
+      }
+
+      // Verify mark duration.
+      bool is_dah = morse_is_dah(morse_encoded, pos);
+      uint16_t expected = is_dah ? 3 * DIT_TICKS : DIT_TICKS;
+      if (!is_close(timing[timing_idx], expected)) {
+        // Mark duration failed.
+        return false;
+      }
+
+      // Verify space duration.
+      bool is_last_element = (pos == 0);
+      bool is_last_char_element = (i == (morse_buf_len - 1));
+      if (is_last_element && is_last_char_element) {
+        // We don't record the final char's last space, so
+        // just increment and move on.
+        timing_idx++;
+        continue;
+      }
+
+      // Check the key-up duration.
+      timing_idx++;
+      if (timing_idx >= timing_len) {
+        // Stopped too soon.
+        return false;
+      }
+
+      // note that spaces are stored as negative.
+      uint16_t actual = -timing[timing_idx];
+      // We'll be flexible about inter letter space, just requiring
+      // that we have at least 4 dits overall. Remember that
+      if (is_last_element) {
+        if (actual < 4 * DIT_TICKS - ELEMENT_SLOP_TICKS) {
+          return false;
+        }
+      } else {
+        if (!is_close(actual, DIT_TICKS)) {
+          return false;
+        }
+      }
+      // Move on to the next timing element.
+      timing_idx++;
+    }
   }
-  return (expected_elements == timing_len);
+
+  // After checking all characters, we should have consumed all timing
+  // entries. Otherwise, the user sent too many elements.
+  return (timing_idx == timing_len);
 }
