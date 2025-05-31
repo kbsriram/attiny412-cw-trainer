@@ -267,6 +267,58 @@ void test_practice_sending_correct(void) {
   assert((morse_buf[0] != 0b00000010) || (morse_buf[1] != 0b00000011));
 }
 
+void test_practice_sending_incorrect(void) {
+  printf("Test: state_practice_sending_incorrect\n");
+  state_reset();
+
+  // The tone should remain silent.
+  verify_tone(100, false);
+
+  // Get into practice mode.
+  long_press_and_verify_in_practice();
+
+  // The next tick should initialize the morse generator.
+  state_tick();
+
+  // We should have generated two characters in the morse machine.
+  assert(morse_buf_len == 2);
+
+  // Reset buffer to 'E' 'T' (dit, dah)
+  morse_buf[0] = 0b00000010;
+  morse_buf[1] = 0b00000011;
+
+  // expected_farnsworth_dits = 3;
+  // We should get a word + farnsworth amount of dit silence
+  // before we get to the sending.
+  verify_tone((8 + 3) * DIT_TICKS - 1, false);
+
+  // We expect a E T sequence of marks and spaces.
+  int expected[] = {
+    1, 4 + 3, // letter + farnsworth spacing after E
+    3, 1,
+  };
+  verify_mark_space_dits(expected, 2);
+
+  // Wait a few ticks
+  verify_tone(100, false);
+
+  // Send out a perfect dit <letter> dit
+  int key_sequence[] = {
+    1, 4, 1, 0
+  };
+  send_key_down_up(key_sequence, 4);
+
+  // We should timeout in 2000 ticks.
+  verify_tone(2000, false);
+
+  // We should get graded on this tick.
+  state_tick();
+
+  // We should still see E T in the buffer.
+  assert((morse_buf[0] == 0b00000010) || (morse_buf[1] == 0b00000011));
+}
+
+
 int main(void) {
   test_reset();
   test_straight_key();
@@ -274,5 +326,6 @@ int main(void) {
   test_practice_sending();
   test_practice_sending_timeout();
   test_practice_sending_correct();
+  test_practice_sending_incorrect();
   return 0;
 }
