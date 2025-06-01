@@ -13,6 +13,7 @@ couple of things.
 
 
 A short demo of how it works.
+
 [![A short demo](https://img.youtube.com/vi/G2NQOf4uZJ0/0.jpg)](https://youtu.be/G2NQOf4uZJ0)
 
 The hardware is uncomplicated, I just solder connectors into a stripboard.
