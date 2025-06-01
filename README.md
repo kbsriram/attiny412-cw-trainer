@@ -11,8 +11,10 @@ couple of things.
 
 1. Code golf with a tiny MCU to see what little is needed and get away with.
 
-[![A short demo](https://img.youtube.com/vi/G2NQOf4uZJ0/default.jpg)](https://youtu.be/G2NQOf4uZJ0)
+
+A short demo of how it works.
+[![A short demo](https://img.youtube.com/vi/G2NQOf4uZJ0/0.jpg)](https://youtu.be/G2NQOf4uZJ0)
 
 The hardware is uncomplicated, I just solder connectors into a stripboard.
 
-![](docs/stripboard.jpg)
+<img src="docs/stripboard.jpg" width="480">
