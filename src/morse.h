@@ -47,3 +47,13 @@ uint8_t morse_num_elements(uint8_t encoded);
 
 extern uint8_t morse_buf[];
 extern uint8_t morse_buf_len;
+
+#define WPM 20
+// 50 dits per 'standard word', so
+// 50 * WPM dits per minute
+// => each dit takes 60/(50 * WPM) seconds
+// => 60 * 1000 / (50 * WPM) msec
+// => 1200 / WPM msec.
+// each tick is also 1ms, so this should be the same
+// as the number of ticks.
+#define DIT_TICKS ((1200 / WPM))

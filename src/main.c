@@ -7,12 +7,12 @@
 #include "tone.h"
 
 // (1) Vdd
-// (2) PA6 - SPKR
+// (2) PA6 - KEY
 // (3) PA7 - NC
 // (4) PA1 - NC
 // (5) PA2 - NC
 // (6) PA0 - UPDI
-// (7) PA3 - NC
+// (7) PA3 - SPKR
 // (8) GND
 
 void setup(void) {

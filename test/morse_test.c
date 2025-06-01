@@ -3,8 +3,6 @@
 
 #include "morse.h"
 
-#define DIT_TICKS 60
-
 static void verify_ticks(char* msg, int count, morse_action_t action) {
   for (int i = 0; i < count; i++) {
     morse_action_t actual = morse_tick();

@@ -5,16 +5,6 @@
 
 #include "morse.h"
 
-#define WPM 20
-// 50 dits per 'standard word', so
-// 50 * WPM dits per minute
-// => each dit takes 60/(50 * WPM) seconds
-// => 60 * 1000 / (50 * WPM) msec
-// => 1200 / WPM msec.
-// each tick is also 1ms, so this should be the same
-// as the number of ticks.
-#define DIT_TICKS ((1200 / WPM))
-
 // For space efficiency, we represent dits as 0s and dahs as 1s in an
 // 8-bit value. In order to know when the encoding begins, we prefix
 // the encoding with a 1. For example:

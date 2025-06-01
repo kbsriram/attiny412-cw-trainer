@@ -1,13 +1,15 @@
+#include <stdlib.h>
+
 #include "capture.h"
 #include "key.h"
 #include "morse.h"
 #include "state.h"
 #include "tone.h"
 
-typedef enum _mode_t {
+typedef enum _state_mode_t {
   STRAIGHT_KEY,
   PRACTICE,
-} mode_t;
+} state_mode_t;
 
 typedef enum _straight_key_state_t {
   STRAIGHT_KEY_ANNOUNCING,
@@ -20,7 +22,7 @@ typedef enum _practice_state_t {
   PRACTICE_WAITING,
 } practice_state_t;
 
-static mode_t mode = STRAIGHT_KEY;
+static state_mode_t mode = STRAIGHT_KEY;
 practice_state_t practice_state = PRACTICE_ANNOUNCING;
 static straight_key_state_t straight_key_state = STRAIGHT_KEY_ANNOUNCING;
 static uint8_t practice_nchars = 2;
@@ -28,7 +30,9 @@ static uint8_t practice_farnsworth_dits = MAX_FARNSWORTH_DITS;
 #define MAX_ATTEMPTS 3
 static uint8_t practice_attempts = 0;
 
-static void mode_reset(mode_t new_mode) {
+static uint16_t tick_counter = 0;
+
+static void mode_reset(state_mode_t new_mode) {
   tone_enable(false);
   morse_reset();
   capture_reset();
@@ -40,6 +44,8 @@ static void mode_reset(mode_t new_mode) {
     morse_set('S' - 'A');
     straight_key_state = STRAIGHT_KEY_ANNOUNCING;
   } else {
+    // randomize based on when mode is switched.
+    srandom(tick_counter);
     morse_set('P' - 'A');
     practice_state = PRACTICE_ANNOUNCING;
   }    
@@ -256,6 +262,7 @@ void state_reset(void) {
 }
 
 void state_tick(void) {
+  tick_counter++;
   tone_tick();
   key_state_t key_state = key_tick();
   morse_action_t morse_action = morse_tick();

@@ -6,8 +6,6 @@
 #include "morse.h"
 #include "state.h"
 
-#define DIT_TICKS 60
-
 extern bool tone_enabled;
 extern void set_hal_key_pressed(bool v);
 
